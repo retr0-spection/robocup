@@ -1,5 +1,4 @@
 import numpy as np
-from agent.utils import _find_most_open_attacking_player_pos
 
 def min_zero_row(zero_mat, mark_zero):
 	min_row = [99999, -1]
@@ -112,7 +111,7 @@ def role_assignment(teammate_positions, formation_positions):
 
 
 
-def pass_reciever_selector(player_unum, teammate_positions, final_target, closest_opponent):
+def pass_reciever_selector(player_unum, teammate_positions, final_target):
     
     # Input : Locations of all teammates and a final target you wish the ball to finish at
     # Output : Target Location in 2d of the player who is recieveing the ball
@@ -121,7 +120,7 @@ def pass_reciever_selector(player_unum, teammate_positions, final_target, closes
 
     # Example
     pass_reciever_unum = player_unum + 1                  #This starts indexing at 1, therefore player 1 wants to pass to player 2
-    candidate = _find_most_open_attacking_player_pos(teammate_positions[player_unum],teammate_positions, closest_opponent)
+    candidate = _find_closest_pair(teammate_positions[player_unum], teammate_positions)
     if type(candidate) == list:
         target = candidate
     else:
@@ -132,8 +131,18 @@ def pass_reciever_selector(player_unum, teammate_positions, final_target, closes
 
 
 
-
-
+def _find_closest_pair(origin, teammates):
+	origin = np.array(origin)
+	teammates = np.array(teammates)
+	distances = [euclidean_distance(origin, teammate) if (teammate[0] == origin[0] and teammate[1] == origin[1]) else 1000 for teammate in teammates]
+	_ = min(distances)
+	idx = distances.index(_)
+	candidate = teammates[idx]
+	#mate is ahead in the field
+	if candidate[0] >= origin[0]:
+		return candidate
+	else:
+		return None
 
 	
 	

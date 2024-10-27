@@ -287,17 +287,20 @@ class Agent(Base_Agent):
 
 
         if strategyData.active_player_unum == strategyData.robot_model.unum: # I am the active player 
-            target = pass_reciever_selector(strategyData.player_unum, strategyData.teammate_positions, (15,0), strategyData.opponent_positions[strategyData.closest_opponent_unum-1])
+            target = pass_reciever_selector(strategyData.player_unum, strategyData.teammate_positions, (15,0))
             drawer.line(strategyData.mypos, target, 2,drawer.Color.red,"pass line")
 
             # check if opponent player is defending
-            # _p = True
-            # for opp in strategyData.opponent_positions:
-            #     if opp.any():
-            #         if self._is_point_on_line_segment(strategyData.mypos[0], strategyData.mypos[1], target[0], target[1], opp[0], opp[1]):
-            #             _p = False
-            #             break
-            return self.kickTarget(strategyData, strategyData.mypos, target)
+            _p = True
+            for opp in strategyData.opponent_positions:
+                if opp.any():
+                    if self._is_point_on_line_segment(strategyData.mypos[0], strategyData.mypos[1], target[0], target[1], opp[0], opp[1]):
+                        _p = False
+                        break
+            if _p: 
+                return self.kickTarget(strategyData,strategyData.mypos,target)
+            else:
+                return self.move(strategyData.my_desired_position, orientation=strategyData.ball_dir)
         else:
             drawer.clear("pass line")
             return self.move(strategyData.my_desired_position, orientation=strategyData.ball_dir)
@@ -323,7 +326,7 @@ class Agent(Base_Agent):
                 self.move(self.init_pos, orientation=strategyData.ball_dir) # walk in place 
             else:
                 # compute basic formation position based on ball position
-                           
+                
                 new_x = max(0.5,(strategyData.ball_2d[0]+15)/15) * (self.init_pos[0]+15) - 15
                 if strategyData.min_teammate_ball_dist < strategyData.min_opponent_ball_dist:
                     new_x = min(new_x + 3.5, 13) # advance if team has possession

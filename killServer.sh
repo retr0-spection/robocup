@@ -1,0 +1,1 @@
+ps -e | awk -v val='rcssserver3d' '$4 == val { print $1 }'|xargs -r kill -9

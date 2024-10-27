@@ -293,7 +293,7 @@ class Agent(Base_Agent):
             # check if opponent player is defending
             _p = True
             for opp in strategyData.opponent_positions:
-                if opp.any():
+                if opp != None:
                     if self._is_point_on_line_segment(strategyData.mypos[0], strategyData.mypos[1], target[0], target[1], opp[0], opp[1]):
                         _p = False
                         break
@@ -326,7 +326,6 @@ class Agent(Base_Agent):
                 self.move(self.init_pos, orientation=strategyData.ball_dir) # walk in place 
             else:
                 # compute basic formation position based on ball position
-                
                 new_x = max(0.5,(strategyData.ball_2d[0]+15)/15) * (self.init_pos[0]+15) - 15
                 if strategyData.min_teammate_ball_dist < strategyData.min_opponent_ball_dist:
                     new_x = min(new_x + 3.5, 13) # advance if team has possession

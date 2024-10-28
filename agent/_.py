@@ -174,42 +174,6 @@ class Agent(Base_Agent):
         else: # fat proxy behavior
             return self.fat_proxy_kick()
 
-
-    def _is_point_on_line_segment(self, x1, y1, x2, y2, x3, y3, epsilon=1e-10):
-        """
-        Check if point (x3, y3) lies on the line segment between (x1, y1) and (x2, y2).
-        
-        Args:
-            x1, y1: Coordinates of first point
-            x2, y2: Coordinates of second point
-            x3, y3: Coordinates of point to check
-            epsilon: Small value for floating point comparison
-            
-        Returns:
-            bool: True if point lies on line segment, False otherwise
-        """
-        # Check if point is within the bounding box
-        if not (min(x1, x2) - epsilon <= x3 <= max(x1, x2) + epsilon and
-                min(y1, y2) - epsilon <= y3 <= max(y1, y2) + epsilon):
-            return False
-        
-        # Handle vertical line case
-        if abs(x1 - x2) < epsilon:
-            return abs(x3 - x1) < epsilon
-        
-        # Handle horizontal line case
-        if abs(y1 - y2) < epsilon:
-            return abs(y3 - y1) < epsilon
-        
-        # Calculate slope and y-intercept of the line
-        slope = (y2 - y1) / (x2 - x1)
-        y_intercept = y1 - slope * x1
-        
-        # Check if point lies on the line
-        expected_y = slope * x3 + y_intercept
-        return abs(expected_y - y3) < epsilon
-
-
     def think_and_send(self):
         
         behavior = self.behavior
@@ -270,9 +234,9 @@ class Agent(Base_Agent):
 
         drawer.line(strategyData.mypos, strategyData.my_desired_position, 2,drawer.Color.blue,"target line")
 
-        # if not strategyData.IsFormationReady(point_preferences):
-        #     return self.move(strategyData.my_desired_position, orientation=strategyData.my_desried_orientation)
-        # else:
+        if not strategyData.IsFormationReady(point_preferences):
+            return self.move(strategyData.my_desired_position, orientation=strategyData.my_desried_orientation)
+        #else:
         #     return self.move(strategyData.my_desired_position, orientation=strategyData.ball_dir)
 
 
@@ -289,71 +253,61 @@ class Agent(Base_Agent):
         if strategyData.active_player_unum == strategyData.robot_model.unum: # I am the active player 
             target = pass_reciever_selector(strategyData.player_unum, strategyData.teammate_positions, (15,0))
             drawer.line(strategyData.mypos, target, 2,drawer.Color.red,"pass line")
-
-            # check if opponent player is defending
-            _p = True
-            for opp in strategyData.opponent_positions:
-                try:
-                    if opp != None:
-                        if self._is_point_on_line_segment(strategyData.mypos[0], strategyData.mypos[1], target[0], target[1], opp[0], opp[1]):
-                            _p = False
-                            break
-                except Exception:
-                    pass
-            if _p: 
-                return self.kickTarget(strategyData,strategyData.mypos,target)
-            else:
-                return self.move(strategyData.my_desired_position, orientation=strategyData.ball_dir)
+            return self.kickTarget(strategyData,strategyData.mypos,target)
         else:
             drawer.clear("pass line")
             return self.move(strategyData.my_desired_position, orientation=strategyData.ball_dir)
+            
 
 
-        if strategyData.PM == self.world.M_GAME_OVER:
-            pass
-        elif strategyData.PM_GROUP == self.world.MG_ACTIVE_BEAM:
-            self.beam()
-        elif strategyData.PM_GROUP == self.world.MG_PASSIVE_BEAM:
-            self.beam(True) # avoid center circle
-        elif self.state == 1 or (behavior.is_ready("Get_Up") and self.fat_proxy_cmd is None):
-            self.state = 0 if behavior.execute("Get_Up") else 1 # return to normal state if get up behavior has finished
-        elif strategyData.PM == self.world.M_OUR_KICKOFF:
-            if strategyData.robot_model.unum == 9:
-                self.kick(120,3) # no need to change the state when PM is not Play On
-            else:
-                self.move(self.init_pos, orientation=strategyData.ball_dir) # walk in place
-        elif strategyData.PM == self.world.M_THEIR_KICKOFF:
-            self.move(self.init_pos, orientation=strategyData.ball_dir) # walk in place
-        elif strategyData.active_player_unum != strategyData.robot_model.unum: # I am not the active player
-            if strategyData.robot_model.unum == 1: # I am the goalkeeper
-                self.move(self.init_pos, orientation=strategyData.ball_dir) # walk in place 
-            else:
-                # compute basic formation position based on ball position
-                new_x = max(0.5,(strategyData.ball_2d[0]+15)/15) * (self.init_pos[0]+15) - 15
-                if strategyData.min_teammate_ball_dist < strategyData.min_opponent_ball_dist:
-                    new_x = min(new_x + 3.5, 13) # advance if team has possession
-                self.move((new_x,self.init_pos[1]), orientation=strategyData.ball_dir, priority_unums=[strategyData.active_player_unum])
 
-        else: # I am the active player
-            path_draw_options(enable_obstacles=True, enable_path=True, use_team_drawing_channel=True) # enable path drawings for active player (ignored if self.enable_draw is False)
+
+
+        # if strategyData.PM == self.world.M_GAME_OVER:
+        #     pass
+        # elif strategyData.PM_GROUP == self.world.MG_ACTIVE_BEAM:
+        #     self.beam()
+        # elif strategyData.PM_GROUP == self.world.MG_PASSIVE_BEAM:
+        #     self.beam(True) # avoid center circle
+        # elif self.state == 1 or (behavior.is_ready("Get_Up") and self.fat_proxy_cmd is None):
+        #     self.state = 0 if behavior.execute("Get_Up") else 1 # return to normal state if get up behavior has finished
+        # elif strategyData.PM == self.world.M_OUR_KICKOFF:
+        #     if strategyData.robot_model.unum == 9:
+        #         self.kick(120,3) # no need to change the state when PM is not Play On
+        #     else:
+        #         self.move(self.init_pos, orientation=strategyData.ball_dir) # walk in place
+        # elif strategyData.PM == self.world.M_THEIR_KICKOFF:
+        #     self.move(self.init_pos, orientation=strategyData.ball_dir) # walk in place
+        # elif strategyData.active_player_unum != strategyData.robot_model.unum: # I am not the active player
+        #     if strategyData.robot_model.unum == 1: # I am the goalkeeper
+        #         self.move(self.init_pos, orientation=strategyData.ball_dir) # walk in place 
+        #     else:
+        #         # compute basic formation position based on ball position
+        #         new_x = max(0.5,(strategyData.ball_2d[0]+15)/15) * (self.init_pos[0]+15) - 15
+        #         if strategyData.min_teammate_ball_dist < strategyData.min_opponent_ball_dist:
+        #             new_x = min(new_x + 3.5, 13) # advance if team has possession
+        #         self.move((new_x,self.init_pos[1]), orientation=strategyData.ball_dir, priority_unums=[strategyData.active_player_unum])
+
+        # else: # I am the active player
+        #     path_draw_options(enable_obstacles=True, enable_path=True, use_team_drawing_channel=True) # enable path drawings for active player (ignored if self.enable_draw is False)
 
             
-            enable_pass_command = (strategyData.PM == self.world.M_PLAY_ON and strategyData.ball_2d[0]<6)
+        #     enable_pass_command = (strategyData.PM == self.world.M_PLAY_ON and strategyData.ball_2d[0]<6)
 
-            if strategyData.robot_model.unum == 1 and strategyData.PM_GROUP == self.world.MG_THEIR_KICK: # goalkeeper during their kick
-                self.move(self.init_pos, orientation=strategyData.ball_dir) # walk in place 
-            if strategyData.PM == self.world.M_OUR_CORNER_KICK:
-                self.kick( -np.sign(strategyData.ball_2d[1])*95, 5.5) # kick the ball into the space in front of the opponent's goal
-                # no need to change the state when PM is not Play On
-            elif strategyData.min_opponent_ball_dist + 0.5 < strategyData.min_teammate_ball_dist: # defend if opponent is considerably closer to the ball
-                if self.state == 2: # commit to kick while aborting
-                    self.state = 0 if self.kick(abort=True) else 2
-                else: # move towards ball, but position myself between ball and our goal
-                    self.move(strategyData.slow_ball_pos + M.normalize_vec((-16,0) - strategyData.slow_ball_pos) * 0.2, is_aggressive=True)
-            else:
-                self.state = 0 if self.kick(strategyData.goal_dir,9,False,enable_pass_command) else 2
+        #     if strategyData.robot_model.unum == 1 and strategyData.PM_GROUP == self.world.MG_THEIR_KICK: # goalkeeper during their kick
+        #         self.move(self.init_pos, orientation=strategyData.ball_dir) # walk in place 
+        #     if strategyData.PM == self.world.M_OUR_CORNER_KICK:
+        #         self.kick( -np.sign(strategyData.ball_2d[1])*95, 5.5) # kick the ball into the space in front of the opponent's goal
+        #         # no need to change the state when PM is not Play On
+        #     elif strategyData.min_opponent_ball_dist + 0.5 < strategyData.min_teammate_ball_dist: # defend if opponent is considerably closer to the ball
+        #         if self.state == 2: # commit to kick while aborting
+        #             self.state = 0 if self.kick(abort=True) else 2
+        #         else: # move towards ball, but position myself between ball and our goal
+        #             self.move(strategyData.slow_ball_pos + M.normalize_vec((-16,0) - strategyData.slow_ball_pos) * 0.2, is_aggressive=True)
+        #     else:
+        #         self.state = 0 if self.kick(strategyData.goal_dir,9,False,enable_pass_command) else 2
 
-            path_draw_options(enable_obstacles=False, enable_path=False) # disable path drawings
+        #     path_draw_options(enable_obstacles=False, enable_path=False) # disable path drawings
 
 
     
